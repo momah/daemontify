@@ -22,6 +22,10 @@ git clone https://github.com/momah/daemontify && cd vagrant/data sudo make
 
   $ service daemontify Start
 
-Stop whatever service:
+### Restart whatever service:
 
-  $ service nameservice stop
+  $ service servicename restart
+
+### Stop whatever service:
+
+  $ service servicename stop
