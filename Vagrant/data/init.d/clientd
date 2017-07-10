@@ -1,0 +1,154 @@
+#! /bin/sh
+
+NAME=daemontify
+DAEMON=/usr/local/bin/$NAME
+PIDFILE=/var/run/$NAME.pid
+
+# State strings
+BASESTRING="$NAME daemon is "
+DAEMONSTARTING="$BASESTRING starting."
+DAEMONRUNNING="$BASESTRING running."
+DAEMONNOTRUNNING="$BASESTRING not running"
+DAEMONSTOPED="$BASESTRING stoped"
+DAEMONUSAGE="Usage: $NAME {start|stop|restart|status}"
+
+is_existPIDFILE(){
+  if [ -f "$PIDFILE" ];
+  then
+    return 0
+  else
+    return 1
+  fi
+}
+
+ARGV1=$2
+ARGV2=$3
+ARGV3=$4
+callDaemon(){
+  $DAEMON $ARGV1 $ARGV2 $ARGV3
+  PID=$(pgrep -f $DAEMON)
+  echo $PID > $PIDFILE
+}
+
+is_running(){
+  if [ -n "$(ps -A | grep $1)" ]
+  then
+    return 1
+  else
+    return 0
+  fi
+}
+
+start() {
+  is_existPIDFILE
+  createdPIDFILE=$?
+
+  if [ $createdPIDFILE -eq 0 ]
+  then
+
+    PIDINFILE=$(cat $PIDFILE)
+    is_running $PIDINFILE
+    running=$?
+
+    if [ $running -ne 0 ]
+    then
+      echo $DAEMONSTARTING
+      # Call to the daemon
+      call
+    else
+      echo $DAEMONRUNNING
+    fi
+
+  else
+    echo $DAEMONSTARTING
+    # Call to the daemon
+    call
+  fi
+}
+
+stop() {
+  is_existPIDFILE
+  createdPIDFILE=$?
+
+  if [ $createdPIDFILE -eq 0 ]
+  then
+
+    PIDINFILE=$(cat $PIDFILE)
+    is_running $PIDINFILE
+    running=$?
+
+    if [ $running -ne 0 ]
+    then
+
+      # devuelve distinto de cero
+      rm $PIDFILE
+
+      echo $DAEMONNOTRUNNING
+    else
+      kill $PIDINFILE
+
+      rm $PIDFILE
+
+      echo $DAEMONSTOPED
+    fi
+
+  else
+    echo $DAEMONNOTRUNNING
+  fi
+}
+
+restart() {
+  stop
+  start
+}
+
+status() {
+  is_existPIDFILE
+  createdPIDFILE=$?
+
+  if [ $createdPIDFILE -eq 0 ]
+  then
+
+    PIDINFILE=$(cat $PIDFILE)
+    is_running $PIDINFILE
+    running=$?
+
+    if [ $running -ne 0 ]
+    then
+      rm $PIDFILE
+      echo $DAEMONNOTRUNNING
+    else
+      echo $DAEMONRUNNING
+    fi
+
+  else
+    echo $DAEMONNOTRUNNING
+  fi
+}
+
+info(){
+  echo $DAEMONUSAGE
+}
+
+case "$1" in
+  start)
+    start
+    ;;
+
+  stop)
+    stop
+    ;;
+
+  restart)
+    restart
+    ;;
+
+  status)
+    status
+    ;;
+
+  *)
+    info
+esac
+
+exit 0
